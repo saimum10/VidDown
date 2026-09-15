@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VidDown</string>
+    <string name="tab_browser">Browser</string>
+    <string name="tab_downloads">Downloads</string>
+    <string name="tab_history">History</string>
+    <string name="browser_url_hint">Search or paste a video link</string>
+    <string name="detected_downloadable">Video detected on this page</string>
+    <string name="fetching_formats">Fetching available formats…</string>
+    <string name="choose_quality">Choose quality</string>
+    <string name="download_started">Download queued</string>
+    <string name="notif_channel_downloads">Downloads</string>
+</resources>

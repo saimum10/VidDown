@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="viddown_blue_dark">#0B5FBF</color>
+    <color name="viddown_blue">#1E88E5</color>
+    <color name="viddown_blue_light">#5FC1FF</color>
+    <color name="viddown_bg_dark">#0E1420</color>
+    <color name="viddown_surface_dark">#161D2B</color>
+</resources>
