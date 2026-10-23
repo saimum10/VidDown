@@ -1,0 +1,12 @@
+# Development dependencies for VidDown.
+# Tkinter itself is NOT pip-installable — on Debian/Ubuntu install it with:
+#   sudo apt install python3-tk
+#
+# Install the rest with:
+#   pip install -r requirements.txt --break-system-packages
+
+# yt-dlp[default] = yt-dlp plus its recommended extras, including yt-dlp-ejs —
+# the JavaScript solver YouTube needs (it also needs a JS runtime: see the
+# "with-js" build, which bundles Deno).
+yt-dlp[default]>=2025.11.12
+Pillow>=10.0.0

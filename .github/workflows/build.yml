@@ -1,0 +1,172 @@
+name: Build VidDown (Debian .deb + Windows .exe, with/without JS runtime)
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every platform is built in two flavours (matrix.variant):
+#   with-js — bundles Deno, the JavaScript runtime YouTube needs (with yt-dlp-ejs)
+#   no-js   — smaller, no runtime bundled
+# The file names carry the flavour; the in-app updater (core/app_updater.py)
+# picks its download by them, so do not rename the outputs without changing it.
+jobs:
+  # ---------------------------------------------------------------------------
+  # Quick checks first: everything compiles and the pure-logic unit tests pass.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile everything
+        run: python -m compileall -q .
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+  # ---------------------------------------------------------------------------
+  # Debian / Ubuntu .deb — built inside Debian 12 (bookworm) on purpose: a
+  # PyInstaller bundle only runs on systems with the same or a newer glibc than
+  # the one it was built on, so building on the oldest common base makes the
+  # .deb work on Debian 12/13 and Ubuntu 22.04+.
+  # ---------------------------------------------------------------------------
+  build-deb:
+    name: Build .deb (${{ matrix.variant }})
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [with-js, no-js]
+    container:
+      image: debian:bookworm
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Base tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates git file \
+            python3 python3-dev python3-pip python3-tk python3-venv binutils \
+            wget tar xz-utils unzip fakeroot dpkg-dev aria2 desktop-file-utils
+
+      - uses: actions/checkout@v5
+
+      - name: Build .deb
+        run: bash ./build_deb.sh --variant ${{ matrix.variant }}
+
+      - name: Show package contents
+        run: |
+          dpkg-deb --info ./*.deb
+          dpkg-deb --contents ./*.deb | grep -E "(bin/(ffmpeg|ffprobe|aria2c|deno)|build_variant\.txt)$" || true
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: viddown-deb-${{ matrix.variant }}
+          path: "*.deb"
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Windows — installer (.exe) + portable .zip, built by build_windows.ps1
+  # ---------------------------------------------------------------------------
+  build-windows:
+    name: Build .exe (${{ matrix.variant }})
+    needs: test
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [with-js, no-js]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Build installer + portable zip
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          ./build_windows.ps1 -Variant ${{ matrix.variant }}
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: viddown-windows-${{ matrix.variant }}
+          path: |
+            VidDown_Setup_*_x64_${{ matrix.variant }}.exe
+            VidDown_*_windows_x64_portable_${{ matrix.variant }}.zip
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Publish a GitHub Release automatically after every successful build.
+  # The release tag is v<version from version.py> (e.g. v2.9.0.1). Pushing the
+  # same version again updates that release's files; bump version.py for a new one.
+  # SHA256SUMS.txt is what the in-app updater checks a download against.
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish release
+    needs: [build-deb, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Work out release tag
+        id: ver
+        run: |
+          VERSION=$(python3 -c "import version; print(version.__version__)")
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v${VERSION}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          ls -l
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: VidDown ${{ steps.ver.outputs.version }}
+          body: |
+            Each platform comes in two builds:
+            - **with-js** — includes Deno, the JavaScript runtime YouTube needs to offer every video format (larger download).
+            - **no-js** — smaller; no JS runtime bundled (a Deno/Node/Bun you installed yourself is still used).
+
+            VidDown updates itself from these releases (Settings → Updates & About); `SHA256SUMS.txt` is what it checks downloads against.
+          files: dist/*
+          generate_release_notes: true
+          make_latest: true
