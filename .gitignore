@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.deb
+VidDown_Setup_*.exe
+VidDown_*_portable*.zip
+# downloaded by the build scripts (bin/README.txt stays)
+bin/ffmpeg
+bin/ffprobe
+bin/aria2c
+bin/*.exe
+bin/deno
+bin/deno.exe
+build_variant.txt
