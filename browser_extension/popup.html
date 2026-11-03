@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 280px;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #1a1f2e;
+      color: #eef1f7;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2b313f;
+    }
+    .logo { font-size: 22px; }
+    .title { font-size: 15px; font-weight: 700; }
+    .subtitle { font-size: 11px; color: #6b7384; }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #242936;
+      margin-bottom: 12px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.ok      { background: #22c55e; }
+    .dot.error   { background: #ef4444; }
+    .dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .status-text { font-size: 13px; }
+    .status-sub  { font-size: 11px; color: #6b7384; margin-top: 2px; }
+    .tip {
+      font-size: 11px;
+      color: #6b7384;
+      padding: 8px 10px;
+      background: #242936;
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+    .tip b { color: #aab2c5; }
+    .send-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 9px;
+      border: none;
+      border-radius: 7px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .send-btn:hover  { background: #2563eb; }
+    .send-btn:active { transform: scale(0.98); }
+    .send-btn:disabled { background: #2b313f; color: #6b7384; cursor: default; }
+    .cookie-feedback {
+      font-size: 11px;
+      color: #6b7384;
+      margin-top: 6px;
+      text-align: center;
+      min-height: 14px;
+    }
+    .cookie-feedback.ok    { color: #22c55e; }
+    .cookie-feedback.error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="logo">🎬</span>
+    <div>
+      <div class="title">VidDown Companion</div>
+      <div class="subtitle">Desktop app connector</div>
+    </div>
+  </div>
+
+  <div class="status-row" id="statusRow">
+    <div class="dot loading" id="dot"></div>
+    <div>
+      <div class="status-text" id="statusText">Checking connection…</div>
+      <div class="status-sub"  id="statusSub"></div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <b>Hover</b> over a video on any page to see the ⬇ VidDown button.<br>
+    Click it to pick a quality and download directly.<br>
+    Or click <b>Send Current Tab</b> to open the URL in the app.<br>
+    Need to be logged in to download (e.g. private videos)? That's handled
+    automatically now — the current page's cookies are used for that one
+    fetch only, no separate import step needed.
+  </div>
+
+  <button class="send-btn" id="sendBtn" disabled>📤 Send Current Tab to VidDown</button>
+  <div class="cookie-feedback" id="sendFeedback"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=VidDown
+GenericName=Video Downloader
+Comment=Smart Video Downloader by SAIMUM HABIB
+Exec=/usr/bin/viddown
+Icon=viddown
+Terminal=false
+StartupNotify=true
+StartupWMClass=viddown
+Categories=Network;Video;AudioVideo;
+Keywords=video;download;youtube;facebook;instagram;tiktok;yt-dlp;
