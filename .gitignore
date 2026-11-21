@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.deb
+VidDown_Setup_*.exe
+VidDown_*_portable*.zip
+# downloaded by the build scripts (bin/README.txt stays)
+bin/ffmpeg
+bin/ffprobe
+bin/aria2c
+bin/*.exe
+bin/deno
+bin/deno.exe
+# native NewPipe helper from the viddown-native-bundle release (bin/newpipe/ stays for the jar)
+bin/newpipe/viddown-newpipe
+bin/newpipe/viddown-newpipe.exe
+bin/newpipe/cacert.pem
+bin/newpipe/native-helper.json
+bin/newpipe/native-helper-info/
+build_variant.txt

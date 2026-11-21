@@ -1,0 +1,81 @@
+name: Watch yt-dlp releases
+
+# Once a day: has yt-dlp published a new STABLE release since the last VidDown build?
+#   yes -> bump the VidDown version, commit it, and start "Build VidDown" (build.yml)
+#          pinned to exactly that yt-dlp version; the build then publishes the release.
+#   no  -> nothing happens. No build.
+# The very first run only RECORDS the current yt-dlp version in .github/ytdlp-version.txt
+# (nothing has changed yet, so it does not build).
+#
+# Run it by hand any time: Actions -> "Watch yt-dlp releases" -> Run workflow.
+# To check more or less often, change the cron line (GitHub's shortest interval is 5 minutes).
+
+on:
+  schedule:
+    - cron: "23 3 * * *"        # every day, 03:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write               # commit the version bump
+  actions: write                # start build.yml
+
+concurrency:
+  group: ytdlp-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Check yt-dlp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0        # all tags: a version that already has a release tag is never reused
+          fetch-tags: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Compare with the yt-dlp version of the last build
+        id: watch
+        run: python .github/scripts/ytdlp_watch.py
+
+      - name: Commit the new baseline / version
+        if: steps.watch.outputs.action != 'none'
+        env:
+          ACTION: ${{ steps.watch.outputs.action }}
+          YTDLP: ${{ steps.watch.outputs.ytdlp }}
+          VIDDOWN: ${{ steps.watch.outputs.vidown }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/ytdlp-version.txt version.py browser_extension/manifest.json
+          if [ "$ACTION" = "build" ]; then
+            git commit -m "Build ${VIDDOWN} for yt-dlp ${YTDLP}"
+          else
+            git commit -m "Record yt-dlp ${YTDLP} as the current baseline"
+          fi
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:${BRANCH}"
+
+      - name: Start the build
+        if: steps.watch.outputs.action == 'build'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YTDLP: ${{ steps.watch.outputs.ytdlp }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: gh workflow run build.yml --ref "$BRANCH" -f "ytdlp_version=${YTDLP}"
+
+      - name: Summary
+        env:
+          ACTION: ${{ steps.watch.outputs.action }}
+          YTDLP: ${{ steps.watch.outputs.ytdlp }}
+          VIDDOWN: ${{ steps.watch.outputs.vidown }}
+        run: |
+          case "$ACTION" in
+            build)    echo "yt-dlp ${YTDLP} is new -> VidDown ${VIDDOWN} is being built." >> "$GITHUB_STEP_SUMMARY" ;;
+            baseline) echo "First run: recorded yt-dlp ${YTDLP}. No build." >> "$GITHUB_STEP_SUMMARY" ;;
+            *)        echo "yt-dlp ${YTDLP} is already what the last build used. No build." >> "$GITHUB_STEP_SUMMARY" ;;
+          esac

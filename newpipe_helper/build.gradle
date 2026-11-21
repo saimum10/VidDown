@@ -1,0 +1,34 @@
+// VidDown NewPipe helper: a tiny command-line program that asks the NewPipe
+// Extractor library about a link and prints the answer as JSON. VidDown's
+// Python code runs it (see core/newpipe_engine.py).
+//
+// Build:   gradle jar          (or ./gradlew jar if you add the wrapper)
+// Output:  build/libs/newpipe-helper.jar   (one file, all dependencies inside)
+// Needs:   JDK 17 or newer.
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // Replace with the newest tag from https://github.com/TeamNewPipe/NewPipeExtractor/releases
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.26.5'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+jar {
+    archiveFileName = 'newpipe-helper.jar'
+    manifest { attributes 'Main-Class': 'viddown.newpipe.Main' }
+    // One self-contained jar: unpack every dependency into it. Signature files
+    // of signed dependencies must be left out or the JVM refuses the jar.
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/MANIFEST.MF.bak'
+}

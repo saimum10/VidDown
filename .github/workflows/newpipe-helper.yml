@@ -1,0 +1,30 @@
+name: Build NewPipe helper (jar)
+
+# Builds newpipe_helper/ into newpipe-helper.jar and keeps it as a workflow artifact.
+# The release build (build.yml) does not depend on this: the NewPipe engine is bundled
+# only when the jar exists at newpipe_helper/build/libs/ when build_deb.sh /
+# build_windows.ps1 run. Wire this job into build.yml when you want it in releases.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "newpipe_helper/**"
+      - ".github/workflows/newpipe-helper.yml"
+
+jobs:
+  jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build jar
+        working-directory: newpipe_helper
+        run: gradle --no-daemon jar
+      - uses: actions/upload-artifact@v5
+        with:
+          name: newpipe-helper-jar
+          path: newpipe_helper/build/libs/newpipe-helper.jar
