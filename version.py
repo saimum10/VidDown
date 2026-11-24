@@ -7,4 +7,4 @@ reads from here instead of hard-coding its own copy of the version string
 
 Bump this one line when releasing a new version; nothing else needs to change.
 """
-__version__ = "2.9.0.7"
+__version__ = "2.9.0.8"
